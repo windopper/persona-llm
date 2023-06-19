@@ -28,7 +28,8 @@ prompt = ChatPromptTemplate.from_messages([
 memory = ConversationBufferMemory(return_messages=True)
 conversation = ConversationChain(memory=memory, prompt=prompt, llm=llm)
 
-while True:
-    print(conversation.predict(input=input()))
+
+# while True:
+#     print(conversation.predict(input=input()))
 
 
