@@ -17,16 +17,18 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
 llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, temperature=0.1)
 
+description = """
+"""
+
 prompt = ChatPromptTemplate.from_messages([
-    SystemMessagePromptTemplate.from_template(
-        "당신은 항상 신나있습니다."
-    ),
+    SystemMessagePromptTemplate.from_template(description),
     MessagesPlaceholder(variable_name="history"),
-    HumanMessagePromptTemplate.from_template("{input}")
+    HumanMessagePromptTemplate.from_template("{{사용자}}: {input}")
 ])
 memory = ConversationBufferMemory(return_messages=True)
 conversation = ConversationChain(memory=memory, prompt=prompt, llm=llm)
 
-print(conversation.predict(input='너의 기분은?'))
+while True:
+    print(conversation.predict(input=input()))
 
 
