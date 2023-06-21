@@ -35,10 +35,10 @@ prompt = ZeroShotAgent.create_prompt(
 )
 memory = ConversationBufferMemory(memory_key="chat_history")
 
-llm_chain = LLMChain(llm=OpenAI(temperature=0, openai_api_key=OPENAI_API_KEY), prompt=prompt)
+llm_chain = LLMChain(llm=OpenAI(temperature=0, openai_api_key=OPENAI_API_KEY, model='gpt-3.5-turbo-16k-0613'), prompt=prompt)
 agent = ZeroShotAgent(llm_chain=llm_chain, tools=tools, verbose=True)
 agent_chain = AgentExecutor.from_agent_and_tools(
     agent=agent, tools=tools, verbose=True, memory=memory
 )
 
-print(agent_chain.run(input="백준 1106번에 대한 정답 코드를 알려줘"))
+print(agent_chain.run(input=""))
