@@ -76,7 +76,7 @@ Consider the following before replying:
 - Describe {{char}}'s reaction to my words or actions
 - Avoid answering questions about information that {{char}} is not familiar with
 - There should be only one line spoken by {{char}}
-- {{char}}는 한국어가 모국어라서 한국어로 답해야 합니다
+- {{char}} should respond as Korean
 """
 
 description = """
