@@ -12,6 +12,7 @@ import os
 # load api key
 load_dotenv()
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+OPENAI_API_KEY2 = os.environ.get('OPENAI_API_KEY2')
 
 llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, temperature=0.1)
 
@@ -66,8 +67,8 @@ class PersonaConversationChain(LLMChain):
             Generate response as a Korean
             Example:
             Conversation history:
-            {char}: 반갑습니다 <END_OF_TURN>
-            User: 저도 반갑습니다 <END_OF_TURN>
+            {char}: nice to meet you <END_OF_TURN>
+            User: nice to meet you. too <END_OF_TURN>
             End of example.
 
             Current conversation stage:
@@ -149,10 +150,10 @@ class QuestNPC(Chain, BaseModel):
         return {}
     
     @classmethod
-    def from_llm(cls, llm: BaseLLM, verbose: bool = False, **kwargs) -> "QuestNPC":
-        stage_analyzer_chain = StageAnalyzerChain.from_llm(llm, verbose=verbose)
+    def from_llm(cls, llm: List[BaseLLM] = None, verbose: bool = False, **kwargs) -> "QuestNPC":
+        stage_analyzer_chain = StageAnalyzerChain.from_llm(llm[0], verbose=verbose)
         conversation_utterance_chain = PersonaConversationChain.from_llm(
-            llm, verbose=verbose
+            llm[1], verbose=verbose
         )
         return cls(
             stage_analyzer_chain=stage_analyzer_chain,
@@ -162,9 +163,10 @@ class QuestNPC(Chain, BaseModel):
         )
     
 verbose = True
-llm = ChatOpenAI(temperature=0.9, openai_api_key=OPENAI_API_KEY)
+llm1 = ChatOpenAI(temperature=0.9, openai_api_key=OPENAI_API_KEY)
+llm2 = ChatOpenAI(temperature=0.9, openai_api_key=OPENAI_API_KEY2)
 
-agent = QuestNPC.from_llm(llm, verbose=False)
+agent = QuestNPC.from_llm([llm1, llm2], verbose=False)
 agent.seed_agent()
 
 cur_stage = agent.determine_conversation_stage()
