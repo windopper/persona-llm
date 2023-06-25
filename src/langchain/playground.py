@@ -44,7 +44,9 @@ Caveats:
 test_global_prompt = f"""
 @@@system
 [Writing stylization:
-1. Use Only Korean
+you MUST use the format:
+Thought: Write what you feeling or think of.
+Content: Write what you speak.
 ]
 """
 
@@ -55,7 +57,7 @@ Species: Human
 Gender: Male
 Knowledge:
 - He know witch who kill his father will come back with terrible disaster. Only who can stop the witch is who has a holy sword.
-- He know the people who know the location of holy sword live in next to his house.
+- He know the people who know the location of holy sword. The people lives in next to his house
 Current Status: 
 - Mood: Very bad. because he is very hungry.
 - Behavior: Watering a flower
