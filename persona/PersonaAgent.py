@@ -13,8 +13,7 @@ class PersonaAgent(BaseModel):
     """기억과 성격, 개성을 가지고 있는 캐릭터"""
 
     name: str
-    age: Optional[int] = None
-    traits: str = "N/A"
+    current_action: str = 'nothing'
     status: str
     memory = None
     llm: BaseLanguageModel
@@ -30,3 +29,7 @@ class PersonaAgent(BaseModel):
         return LLMChain(
             llm=self.llm, prompt=prompt, verbose=self.verbose
         )
+    
+
+
+    
