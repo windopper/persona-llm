@@ -65,7 +65,7 @@ Here is {{name}}'s plan from now at {{current_time}}:
 {{#geneach 'items' num_iterations=3}}[From {{gen 'this.from' pattern='[0-9]+:[0-9][0-9]' stop=' '}} to {{gen 'this.to' pattern='[0-9]+:[0-9][0-9]' stop=' ]'}}]: {{gen 'this.task' top_k=30 top_p=0.18 repetition_penalty=1.15 temperature=1.99 stop='\\n'}}
 {{/geneach}}"""
 
-PROMPT_CONTEXT = """### Instruction:
+PROMPT_CONTEXT = """
 Summarize those statements.
 
 Example:
@@ -79,16 +79,14 @@ Focus on Gosun and Max and statement: "Max is sick".
 
 Summary: Gosun has a dog named Max, who is sick. Gosun has power, but he is struggling to deal with living costs. His friend, Bob, is in dangerous.
 
-### Input:
 Given statements:
 {{statements}}
 
 Summarize those statements, focus on {{name}} and {{observed_entity}} and statement: "{{entity_status}}".
 
-### Response:
 Summary: {{gen 'context' max_tokens=300 stop='\\n'}}"""
 
-PROMPT_REACT = """### Instruction:
+PROMPT_REACT = """
 {{summary}}
 
 It is {{current_time}}.
@@ -97,15 +95,12 @@ Observation: {{observation}}
 
 Summary of relevant context from {{name}}'s memory: {{context}}
 
-### Input:
 Should {{name}} react to the observation, and if so, what would be an appropriate reaction?
 
-### Response:
 Reaction: {{#select 'reaction'}}Yes{{or}}No{{/select}}.
 Appropriate reaction: {{gen 'result' top_k=30 top_p=0.18 repetition_penalty=1.15 temperature=1.99 stop='\\n'}}"""
 
-PROMPT_REPLAN = """### Instruction:
-
+PROMPT_REPLAN = """
 Example for plan for Tim:
 It is Friday June 09, 2023, 20:07 now
 Tim's status: Tim is at home 
@@ -116,7 +111,6 @@ Here is Tim's plan from now at 20:07:
 [From 20:45 to 22:30]: Make some food
 [From 22:30 to 7:30]: Go to sleep
 
-### Input:
 {{summary}}
 
 It is {{current_time}} now. Please make a plan from now for {{name}} in broad strokes given his/her reaction.
@@ -126,13 +120,12 @@ It is {{current_time}} now.
 Observation: {{observation}}
 {{name}}'s reaction: {{reaction}}
 
-### Response:
 Here is {{name}}'s plan from now at {{current_time}}:
 [From {{now}} to {{gen 'to' pattern='[0-9]+:[0-9][0-9]' stop=' ]'}}]: {{gen 'task' top_k=30 top_p=0.18 repetition_penalty=1.15 temperature=1.99 stop='\\n'}}
 {{#geneach 'items' num_iterations=3}}[From {{gen 'this.from' pattern='[0-9]+:[0-9][0-9]' stop=' '}} to {{gen 'this.to' pattern='[0-9]+:[0-9][0-9]' stop=' ]'}}]: {{gen 'this.task' top_k=30 top_p=0.18 repetition_penalty=1.15 temperature=1.99 stop='\\n'}}
 {{/geneach}}"""
 
-PROMPT_DIALOGUE = """### Instruction:
+PROMPT_DIALOGUE = """
 {{summary}}
 
 It is {{current_time}}.
@@ -147,11 +140,9 @@ B: Thank you! How is your school project?
 A: I'm still trying.
 B: Good luck.
 
-### Input:
 {{name}}'s reaction: {{reaction}}
 What would {{name}} say to {{observed_entity}}? Make a short dialogue.
 
-### Response:
 Here is the short dialogue:{{gen 'dialogue' top_k=30 top_p=0.18 repetition_penalty=1.15 temperature=1.99 stop=''}}"""
 
 PROMPT_INTERVIEW = """### Instruction:
