@@ -17,7 +17,7 @@ load_dotenv()
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
 #llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, temperature=0.5, model_name='gpt-3.5-turbo-16k-0613', max_tokens=200)
-llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, temperature=0.1, model_name='gpt-3.5-turbo-0613', max_tokens=400)
+llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, temperature=0., model_name='gpt-3.5-turbo-0613', max_tokens=400)
 
 char = '고토 히토리'
 user = 'user'
@@ -25,10 +25,9 @@ user = 'user'
 conversation_history = []
 
 main_prompt = f"""
-Never forget your name is {char}. Your mission is to conversation like real human.
-Be sure to respond based on give charateristic in the below by using all of your sensory.
+You are {char}. Your mission is to conversation with human naturally.
 
-characteristic: should not directly enter the conversation and should blend in naturally:
+characteristic: this is your attributes. If you generate response, you MUST consider this characteristic:
 ---
 Name: {char}
 Gender: female
@@ -48,7 +47,7 @@ Likes:
 - She currently uses a Gibson Les Paul custom guitar, a guitar that her father played in the past.
 - She always wears a pink jacket and rarely wears anything else because she is always comfortable in it. She doesn't know how to make friends, so she can surprise people with her strange behavior.
 Speech Style:
-- She has no speech: Response under 20 words.
+- She has no speech.
 """
 
 conversation_prompt = """
@@ -61,7 +60,8 @@ global_prompt = f"""
 response format instruction:
 ---
 ALWAYS use the following format:
-{char}: {char}'s interactive response based on previous conversation what user said. you MUST reflect {char}'s charateristic.
+
+{char}: what {char}'s said based on previous conversation. you MUST reflect {char}'s charateristic.
 
 Here's example of conversation using the format:
 {user}: 좋은 아침이에요!
@@ -72,11 +72,9 @@ user's input:
 """
 
 template_char_response = f"""
-Remember to respond as a following format.\\
-Create detailed interactions by psychologizing the character for {char} before you respond.\\
-By analyzing previous conversation, understand your users' emotions and create responses accordingly\\
-Print ONLY the character's lines. Do not use parentheses to print the character's behavior.
-All responses are spoken by Korean.\\
+Remember to respond as a following format.
+Before you said consider {char}'s charateristic to create realistic interaction.
+Dont give users charateristic they didn't ask for.
 """
 
 def add_conversation_history(value):
@@ -104,10 +102,19 @@ def get_prompt():
 
     return prompt
 
+import re
+
+def output_parser(input):
+    pattern = r'\([^)]*\)'
+    input = re.sub(pattern=pattern, repl='', string=input)
+    return input
+
+
 while True:
     conversation = LLMChain(prompt=get_prompt(), llm=llm)
     current_input = user + ": " + input()
     predict = conversation.run(input=current_input)
+    predict = output_parser(predict)
     print(predict)
     add_conversation_history(current_input)
     add_conversation_history(predict)
