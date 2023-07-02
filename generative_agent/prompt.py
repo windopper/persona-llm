@@ -10,17 +10,33 @@ Rating:
 {{~/assistant}}
 """
 
-PROMPT_ADDMEM = """
+PROMPT_ADDMEMS = """
 {{#system~}}
-On the scale of 1 to 10, where 1 is purely mundane (e.g., brushing teeth, making bed) and 10 is extremely poignant (e.g., a break up, college acceptance), rate the likely poignancy of the following piece of memory. Respond with a single integer.
-Memory: {{memory_content}}
+On the scale of 1 to 10, where 1 is purely mundane (e.g., brushing teeth, making bed) and 10 is extremely poignant (e.g., a break up, college acceptance), rate the likely poignancy of the following piece of memory.\\
+Always answer with only a list of numbers.
+If just given one memory still respond in a list.
+Memories are separated by semi colans (;)
+Memories: {{memory_content}}
+
+Rating: 
 {{~/system}}
-{{#user~}}
-Rating:
-{{~/user}}
 {{#assistant~}}
 {{gen 'rate' stop='\\n'}}
-{{~/assistant}}"""
+{{~/assistant}}
+"""
+
+PROMPT_SUMMARIZE = """
+{{#system~}}
+How would you summarize {{name}}'s core characteristics given the following statements:
+{{relevant_memories}}
+Do not embellish
+
+Summary:
+{{~/system}}
+{{#assistant~}}
+{{gen 'summary' temperature=0.5}}
+{{~/assistant}}
+"""
 
 PROMPT_SALIENT = """
 {{#system~}}
@@ -121,18 +137,35 @@ Based on the given statements, {{gen 'res' stop='\\n'}}"""
 
 PROMPT_PLAN = """
 {{#system~}}
-You are {{name}}. 
-The following is your description: {{summary}} You just woke up. 
+Name: {{name}}. 
+Innate traits: {{traits}}
+The following is your description: {{summary}}
 What is your goal for today? Write it down in an hourly basis, starting at {{now}}. 
-Generate 5 plans by writing only one or two very short sentences.
+Generate 5~8 plans by writing only one or two very short sentences.
+Be very brief. Use at most 50 words every plan.
+output format:
+HH:MM - HH:MM: what to do
+{{~/system}}
+{{#assistant~}}
+{{gen 'plans' temperature=0.5 max_tokens=500}}
+{{~/assistant}}
+"""
+
+PROMPT_RECURSIVELY_DECOMPOSED = """
+{{#system~}}
+You are {{name}}.
+The following is your description: {{summary}}
+current plans: {{plans}}
+Decomposing current plans into 5~15 minute chunks.
 Be very brief. Use at most 50 words every plan.
 {{~/system}}
 {{#assistant~}}
-{{gen 'plans' temperature=0.5 max_tokens=300}}
+{{gen 'plans' temperature=0.5 max_tokens=500}}
 {{~/assistant}}
 """
 
 PROMPT_CONTEXT = """
+{{#system~}}
 Summarize those statements.
 
 Example:
@@ -151,9 +184,14 @@ Given statements:
 
 Summarize those statements, focus on {{name}} and {{observed_entity}} and statement: "{{entity_status}}".
 
-Summary: {{gen 'context' max_tokens=300 stop='\\n'}}"""
+Summary:
+{{~/system}}
+{{#assistant~}}
+{{gen 'context' max_tokens=300 stop='\\n'}}
+{{~/assistant}}"""
 
 PROMPT_REACT = """
+{{#system~}}
 {{summary}}
 
 It is {{current_time}}.
@@ -164,8 +202,21 @@ Summary of relevant context from {{name}}'s memory: {{context}}
 
 Should {{name}} react to the observation, and if so, what would be an appropriate reaction?
 
-Reaction: {{#select 'reaction'}}Yes{{or}}No{{/select}}.
-Appropriate reaction: {{gen 'result' top_k=30 top_p=0.18 repetition_penalty=1.15 temperature=1.99 stop='\\n'}}"""
+Reaction: select Yes or No
+{{~/system}}
+
+{{#assistant~}}
+{{gen 'reaction'}}
+{{~/assistant}}
+
+{{#system~}}
+Appropriate reaction: 
+{{~/system}}
+
+{{#assistant~}}
+{{gen 'result' temperature=0.5 stop='\\n'}}
+{{~/assistant}}
+"""
 
 PROMPT_REPLAN = """
 Example for plan for Tim:

@@ -74,6 +74,7 @@ class GenerativeAgent:
         self.age = age
         self.description = description.split(";")
         self.summary = traits
+        self.traits = traits
         self.plan = []
         self.status = None
         embed_size = 1536
@@ -99,7 +100,7 @@ class GenerativeAgent:
         self.summary_refresh_seconds = 3600
         self.aggregate_importance = 0
         self.reflecting = False
-        self.reflection_threshold = 25
+        self.reflection_threshold = 5000
         self.dialogue_list = []
         self.verbose = verbose
 
@@ -114,30 +115,83 @@ class GenerativeAgent:
     def get_current_time(self):
         return self.current_time if self.current_time is not None else datetime.now()
 
+    def get_summary(self, force_refresh=False, now=None):
+        current_time = self.get_current_time() if now is None else now
+        since_refresh = (current_time - self.last_refreshed).seconds
+
+        if (
+            not self.summary
+            or since_refresh >= self.summary_refresh_seconds
+            or force_refresh
+        ):
+            self.summary = self._compute_agent_summary()
+            self.last_refreshed = current_time
+
+        age = self.age if self.age is not None else "N/A"
+        return (
+            f"Name: {self.name} (age: {age})"
+            + f"\nInnate traits: {self.traits}"
+            + f"\n{self.summary}"
+        )
+
+    # TODO: summary 내용 향상을 위한 프롬프트 변경 필요
+    def _compute_agent_summary(self):
+        prompt = self.guidance(PROMPT_SUMMARIZE, silent=self.verbose)
+        documents = self.retriever.get_relevant_documents(
+            self.name + "'s core characteristics", self.get_current_time()
+        )
+        result = prompt(
+            name=self.name,
+            relevant_memories=documents,
+        )
+
+        return result["summary"]
+
     def add_memories(self, memories):
         """Add memories to retriever and reflecting if aggregated importance is higher than threshold"""
-        for memory in memories:
+
+        memory_importance_scores = self._score_memories_importance(memories)
+
+        for memory, score in zip(memories, memory_importance_scores):
             if isinstance(memory, dict):
                 description_, time_ = memory
             else:
                 description_ = memory
                 time_ = self.get_current_time()
 
-            memory_importance_score = self._score_memory_importance(description_)
-
             self.retriever.add_documents(
                 [
                     Document(
                         page_content=description_,
-                        metadata={
-                            "importance": memory_importance_score,
-                            "created_at": time_,
-                        },
+                        metadata={"importance": score, "created_at": time_},
                     ),
                 ],
                 current_time=time_,
             )
-            self.aggregate_importance += memory_importance_score
+            self.aggregate_importance += score
+
+        # for memory in memories:
+        #     if isinstance(memory, dict):
+        #         description_, time_ = memory
+        #     else:
+        #         description_ = memory
+        #         time_ = self.get_current_time()
+
+        #     memory_importance_score = self._score_memory_importance(description_)
+
+        #     self.retriever.add_documents(
+        #         [
+        #             Document(
+        #                 page_content=description_,
+        #                 metadata={
+        #                     "importance": memory_importance_score,
+        #                     "created_at": time_,
+        #                 },
+        #             ),
+        #         ],
+        #         current_time=time_,
+        #     )
+        #     self.aggregate_importance += memory_importance_score
 
         if (
             not self.reflecting
@@ -154,10 +208,24 @@ class GenerativeAgent:
             PROMPT_ADDMEM,
             silent=self.verbose,
         )
+
+        if self.verbose:
+            print('Scoring memory importance...')
+
         result = chain(memory_content=memory_content)
 
         score = int(result["rate"])
         return score
+
+    def _score_memories_importance(self, memory_content):
+        chain = self.guidance(
+            PROMPT_ADDMEMS,
+            silent=self.verbose,
+        )
+        result = chain(memory_content=memory_content)
+        rates = [int(x) for x in result["rate"].strip().split(";")]
+
+        return rates
 
     def _reflection(self):
         list_salient = self._get_salient()
@@ -182,6 +250,9 @@ class GenerativeAgent:
         documents_ = documents
         statements = get_text_from_docs(documents_, include_time=False)
         prompt = self.guidance(PROMPT_INSIGHTS, silent=self.verbose)
+
+
+
         result = prompt(statements=statements)
         return result["items"]
 
@@ -203,16 +274,26 @@ class GenerativeAgent:
     def make_plan(self):
         now = self.get_current_time().strftime("%H:%M")
         prompt = self.guidance(PROMPT_PLAN, silent=self.verbose)
+
+        if self.verbose:
+            print('Generating Plans...')
+
         result = prompt(
-            summary=self.summary,
             name=self.name,
+            traits=self.traits,
+            summary=self.summary,
             now=now,
             current_time=self.get_current_time().strftime("%A %B %d, %Y, %H:%M"),
         )
 
         # current_plan = result['current_plan']
-        plans = result["plans"].split("\n")
-        tasks = plans
+        plans = result["plans"]
+
+        prompt = self.guidance(PROMPT_RECURSIVELY_DECOMPOSED, silent=self.verbose)
+        result = prompt(summary=self.summary, name=self.name, plans=plans)
+        plans = result["plans"]
+        tasks = [f"{self.name} plans" + plan for plan in plans.split("\n")]
+        self.add_memories(tasks)
 
         # for i, task in enumerate(tasks):
         #     print(task)
