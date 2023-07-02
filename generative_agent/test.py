@@ -1,4 +1,4 @@
-from GenerativeAgent import GenerativeAgent
+from generative_agent.GenerativeAgent import GenerativeAgent
 from datetime import datetime
 import guidance
 import os
@@ -15,7 +15,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 # exit()
 
-guidance.llm = guidance.llms.OpenAI(model="gpt-3.5-turbo", api_key=OPENAI_API_KEY)
+guidance.llm = guidance.llms.OpenAI(model="text-davinci-002", api_key=OPENAI_API_KEY)
 embeddings_model = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 
 now = datetime.now()
@@ -30,3 +30,7 @@ sam = GenerativeAgent(
     embeddings_model=embeddings_model,
     current_time=new_time,
 )
+
+sam.update_status()
+
+print(sam.plan)

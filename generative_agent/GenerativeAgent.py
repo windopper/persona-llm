@@ -2,7 +2,6 @@
 # references: https://arxiv.org/pdf/2304.03442.pdf
 # Based on
 # https://github.com/hwchase17/langchain/blob/master/langchain/experimental/generative_agents/generative_agent.py
-
 import logging
 import math
 import faiss
@@ -10,10 +9,10 @@ import re
 import numpy as np
 from datetime import datetime, timedelta
 from typing import List
-from TimeWeightedVectorStoreRetrieverModified import (
+from generative_agent.TimeWeightedVectorStoreRetrieverModified import (
     TimeWeightedVectorStoreRetrieverModified,
 )
-from prompt import *
+from generative_agent.prompt import *
 
 from langchain import LLMChain
 from langchain.docstore import InMemoryDocstore
@@ -86,7 +85,12 @@ class GenerativeAgent:
             {},
             relevance_score_fn=score_normalizer,
         )
-        self.retriever = TimeWeightedVectorStoreRetrieverModified(vectorstore=vectorstore, other_score_keys=["importance"], k=10, decay_rate=0.01)
+        self.retriever = TimeWeightedVectorStoreRetrieverModified(
+            vectorstore=vectorstore,
+            other_score_keys=["importance"],
+            k=10,
+            decay_rate=0.01,
+        )
         self.current_time = current_time
         if self.current_time is None:
             self.last_refreshed = datetime.now()
@@ -146,7 +150,8 @@ class GenerativeAgent:
 
     def _score_memory_importance(self, memory_content):
         """Score the absolute importance of the given memory"""
-        chain = self.guidance(PROMPT_ADDMEM,
+        chain = self.guidance(
+            PROMPT_ADDMEM,
             silent=self.verbose,
         )
         result = chain(memory_content=memory_content)
@@ -206,15 +211,26 @@ class GenerativeAgent:
         )
 
         current_time = self.get_current_time()
-        tasks = result["items"]
-        tasks.insert(0, {"from": now, "to": result["to"], "task": result["task"]})
+
+        tasks = result["vs"]
+        tasks.insert(
+            0,
+            {
+                "from": now,
+                "to": re.findall(r"[0-9]+:[0-9][0-9]", result["to"])[0],
+                "task": result["task"],
+            },
+        )
         tasks_time = []
 
         for i, task in enumerate(tasks):
+            print(task)
+            task["from"] = re.findall(r"[0-9]+:[0-9][0-9]", task["from"])[0]
             task_from = datetime.strptime(task["from"], "%H:%M")
             task_from = current_time.replace(
                 hour=task_from.hour, minute=task_from.minute
             )
+            task["to"] = re.findall(r"[0-9]+:[0-9][0-9]", task["to"])[0]
             task_to = datetime.strptime(task["to"], "%H:%M")
             task_to = current_time.replace(hour=task_to.hour, minute=task_to.minute)
             delta_time = task_to - task_from
