@@ -15,7 +15,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 # exit()
 
-guidance.llm = guidance.llms.OpenAI(model="text-davinci-002", api_key=OPENAI_API_KEY)
+guidance.llm = guidance.llms.OpenAI(model="gpt-3.5-turbo", api_key=OPENAI_API_KEY)
 embeddings_model = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 
 now = datetime.now()

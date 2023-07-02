@@ -188,15 +188,15 @@ class GenerativeAgent:
     def update_status(self):
         current_time = self.get_current_time()
         need_replan = True
-        for task in self.plan:
-            task_to = task["to"]
-            if task_to > current_time:
-                self.status = task["task"]
-                need_replan = False
+        # for task in self.plan:
+        #     task_to = task["to"]
+        #     if task_to > current_time:
+        #         self.status = task["task"]
+        #         need_replan = False
 
         if need_replan:
             new_plan = self.make_plan()
-            self.status = new_plan[0]["task"]
+            self.status = new_plan[0]
 
         return self.status
 
@@ -210,36 +210,27 @@ class GenerativeAgent:
             current_time=self.get_current_time().strftime("%A %B %d, %Y, %H:%M"),
         )
 
-        current_time = self.get_current_time()
+        # current_plan = result['current_plan']
+        plans = result["plans"].split("\n")
+        tasks = plans
 
-        tasks = result["vs"]
-        tasks.insert(
-            0,
-            {
-                "from": now,
-                "to": re.findall(r"[0-9]+:[0-9][0-9]", result["to"])[0],
-                "task": result["task"],
-            },
-        )
-        tasks_time = []
+        # for i, task in enumerate(tasks):
+        #     print(task)
+        #     task["from"] = re.findall(r"[0-9]+:[0-9][0-9]", task["from"])[0]
+        #     task_from = datetime.strptime(task["from"], "%H:%M")
+        #     task_from = current_time.replace(
+        #         hour=task_from.hour, minute=task_from.minute
+        #     )
+        #     task["to"] = re.findall(r"[0-9]+:[0-9][0-9]", task["to"])[0]
+        #     task_to = datetime.strptime(task["to"], "%H:%M")
+        #     task_to = current_time.replace(hour=task_to.hour, minute=task_to.minute)
+        #     delta_time = task_to - task_from
+        #     if delta_time.total_seconds() < 0:
+        #         task_to += timedelta(days=1)
+        #     tasks_time.append({"from": task_from, "to": task_to, "task": task["task"]})
 
-        for i, task in enumerate(tasks):
-            print(task)
-            task["from"] = re.findall(r"[0-9]+:[0-9][0-9]", task["from"])[0]
-            task_from = datetime.strptime(task["from"], "%H:%M")
-            task_from = current_time.replace(
-                hour=task_from.hour, minute=task_from.minute
-            )
-            task["to"] = re.findall(r"[0-9]+:[0-9][0-9]", task["to"])[0]
-            task_to = datetime.strptime(task["to"], "%H:%M")
-            task_to = current_time.replace(hour=task_to.hour, minute=task_to.minute)
-            delta_time = task_to - task_from
-            if delta_time.total_seconds() < 0:
-                task_to += timedelta(days=1)
-            tasks_time.append({"from": task_from, "to": task_to, "task": task["task"]})
-
-        self.plan = tasks_time
-        return tasks_time
+        self.plan = tasks
+        return tasks
 
     def react(self, observation, observed_entity, entity_status):
         if isinstance(observed_entity, str):
