@@ -251,19 +251,17 @@ class GenerativeAgent:
         statements = get_text_from_docs(documents_, include_time=False)
         prompt = self.guidance(PROMPT_INSIGHTS, silent=self.verbose)
 
-
-
         result = prompt(statements=statements)
         return result["items"]
 
     def update_status(self):
         current_time = self.get_current_time()
         need_replan = True
-        # for task in self.plan:
-        #     task_to = task["to"]
-        #     if task_to > current_time:
-        #         self.status = task["task"]
-        #         need_replan = False
+        for task in self.plan:
+            task_to = task["to"]
+            if task_to > current_time:
+                self.status = task["task"]
+                need_replan = False
 
         if need_replan:
             new_plan = self.make_plan()
@@ -274,6 +272,7 @@ class GenerativeAgent:
     def make_plan(self):
         now = self.get_current_time().strftime("%H:%M")
         prompt = self.guidance(PROMPT_PLAN, silent=self.verbose)
+        current_time = self.get_current_time()
 
         if self.verbose:
             print('Generating Plans...')
@@ -320,10 +319,10 @@ class GenerativeAgent:
 
             if delta_time.total_seconds() < 0:
                 task_to += timedelta(days=1)
-            tasks_time.append({"from": from_, "to": to_, "task": task})
+            tasks_time.append({"from": from_, "to": to_, "task": task_})
 
-        self.plan = tasks
-        return tasks
+        self.plan = tasks_time
+        return tasks_time
 
     def react(self, observation, observed_entity, entity_status):
         if isinstance(observed_entity, str):
