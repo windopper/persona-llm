@@ -100,7 +100,7 @@ class GenerativeAgent:
         self.summary_refresh_seconds = 3600
         self.aggregate_importance = 0
         self.reflecting = False
-        self.reflection_threshold = 5000
+        self.reflection_threshold = 25
         self.dialogue_list = []
         self.verbose = verbose
 
@@ -140,9 +140,10 @@ class GenerativeAgent:
         documents = self.retriever.get_relevant_documents(
             self.name + "'s core characteristics", self.get_current_time()
         )
+        statements = get_text_from_docs(documents, include_time = False)
         result = prompt(
             name=self.name,
-            relevant_memories=documents,
+            relevant_memories=statements,
         )
 
         return result["summary"]
@@ -262,10 +263,11 @@ class GenerativeAgent:
             if task_to > current_time:
                 self.status = task["task"]
                 need_replan = False
+                break
 
         if need_replan:
             new_plan = self.make_plan()
-            self.status = new_plan[0]
+            self.status = new_plan[0]['task']
 
         return self.status
 
@@ -401,7 +403,6 @@ class GenerativeAgent:
 
     def _replan(self, observation, reaction):
         current_time = self.get_current_time()
-        now = self.get_current_time().strftime("%H:%M")
         prompt = self.guidance(PROMPT_REPLAN, silent=self.verbose)
         result = prompt(
             summary=self.summary,
@@ -409,7 +410,6 @@ class GenerativeAgent:
             status=self.status,
             observation=observation,
             reaction=reaction,
-            now=now,
             current_time=self.get_current_time().strftime("%A %B %d, %Y, %H:%M"),
         )
 
@@ -443,3 +443,20 @@ class GenerativeAgent:
             tasks_time.append({"from": from_, "to": to_, "task": task_})
 
         return tasks_time
+
+    def interview(self, user, question):
+        documents = self.retriever.get_relevant_documents(question, self.get_current_time())
+        context = get_text_from_docs(documents, include_time = False)
+
+        prompt = self.guidance(PROMPT_INTERVIEW, silent=self.verbose)
+        result = prompt(
+            summary=self.summary,
+            name=self.name,
+            status=self.status,
+            user=user,
+            context=context,
+            question=question,
+            current_time = self.get_current_time().strftime('%A %B %d, %Y, %H:%M')
+        )
+
+        return result['response']

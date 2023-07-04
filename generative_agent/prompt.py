@@ -55,7 +55,7 @@ PROMPT_INSIGHTS = """
 What 3 high-level insights can you infer from the above statements?
 {{~/user}}
 {{#assistant~}}
-{{gen 'items'}}
+{{gen 'items' temperature=0.5}}
 {{~/assistant}}"""
 
 PROMPT_PLAN = """
@@ -143,9 +143,15 @@ Appropriate reaction:
 
 PROMPT_REPLAN = """
 {{#system~}}
-You are {{name}}. 
-The following is your description: {{summary}}.
-What is your goal for today? Write it down in an hourly basis, starting at {{now}}. 
+
+{{summary}}.
+It is {{current_time}} now. Please make a plan from now for {{name}} in broad stroke given his/her reaction.
+
+It is {{current_time}} now. 
+{{name}}'s status: {{status}}
+Observation: {{observation}}
+{{name}}'s reaction: {{reaction}}
+
 Generate 5 plans by writing only one or two very short sentences.
 Be very brief. Use at most 50 words every plan.
 output format:
@@ -180,7 +186,7 @@ What would {{name}} say to {{observed_entity}}? Make a short dialogue.
 Here is the short dialogue:
 {{~/user}}
 {{#assistant~}}
-{{gen 'dialogue' temperature=0.5 stop=''}}
+{{gen 'dialogue' temperature=0.5}}
 {{~/assistant}}
 """
 
