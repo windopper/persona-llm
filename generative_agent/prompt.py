@@ -148,13 +148,16 @@ The following is your description: {{summary}}.
 What is your goal for today? Write it down in an hourly basis, starting at {{now}}. 
 Generate 5 plans by writing only one or two very short sentences.
 Be very brief. Use at most 50 words every plan.
+output format:
+HH:MM - HH:MM) what to do
 {{~/system}}
 {{#assistant~}}
-{{gen 'plans' temperature=0.5 max_tokens=300}}
+{{gen 'plans' temperature=0.5}}
 {{~/assistant}}
 """
 
 PROMPT_DIALOGUE = """
+{{#system~}}
 {{summary}}
 
 It is {{current_time}}.
@@ -169,12 +172,20 @@ B: Thank you! How is your school project?
 A: I'm still trying.
 B: Good luck.
 
+{{~/system}}
+{{#user~}}
 {{name}}'s reaction: {{reaction}}
 What would {{name}} say to {{observed_entity}}? Make a short dialogue.
 
-Here is the short dialogue:{{gen 'dialogue' top_k=30 top_p=0.18 repetition_penalty=1.15 temperature=1.99 stop=''}}"""
+Here is the short dialogue:
+{{~/user}}
+{{#assistant~}}
+{{gen 'dialogue' temperature=0.5 stop=''}}
+{{~/assistant}}
+"""
 
-PROMPT_INTERVIEW = """### Instruction:
+PROMPT_INTERVIEW = """
+{{#system~}}
 {{summary}}
 
 It is {{current_time}}.
@@ -182,9 +193,12 @@ It is {{current_time}}.
 
 Summary of relevant context from {{name}}'s memory:
 {{context}}
-
-### Input:
+{{~/system}}
+{{#user~}}
 The {{user}} say "{{question}}". What should {{name}} response?
 
-### Response:
-Here is the response from {{name}}: "{{gen 'response' top_k=30 top_p=0.18 repetition_penalty=1.15 temperature=1.99 stop='"'}}\""""
+Here is the response from {{name}}: 
+{{~/user}}
+{{#assistant~}}
+{{gen 'response' temperature=0.5}}
+{{~/assistant}}"""

@@ -210,7 +210,7 @@ class GenerativeAgent:
         )
 
         if self.verbose:
-            print('Scoring memory importance...')
+            print("Scoring memory importance...")
 
         result = chain(memory_content=memory_content)
 
@@ -275,7 +275,7 @@ class GenerativeAgent:
         current_time = self.get_current_time()
 
         if self.verbose:
-            print('Generating Plans...')
+            print("Generating Plans...")
 
         result = prompt(
             name=self.name,
@@ -290,26 +290,25 @@ class GenerativeAgent:
 
         prompt = self.guidance(PROMPT_RECURSIVELY_DECOMPOSED, silent=self.verbose)
         result = prompt(summary=self.summary, name=self.name, plans=plans)
+
         plans = result["plans"]
-        plan_splitted = [plan for plan in plans.split('\n')]
-        print(plan_splitted)
+        plan_splitted = [plan for plan in plans.split("\n")]
+        # print(plan_splitted)
         tasks_time = []
 
-        #tasks = [f"{self.name} plans " + plan for plan in plans.split("\n")]
-        #self.add_memories(tasks)
+        # tasks = [f"{self.name} plans " + plan for plan in plans.split("\n")]
+        # self.add_memories(tasks)
 
         for plan in plan_splitted:
-            splitted = plan.split(')')
+            splitted = plan.split(")")
             time_ = splitted[0]
-            task_ = splitted[1]
-            #print(time_, task_)
-            from_, to_ = (_.strip() for _ in time_.split('-')) 
+            task_ = splitted[1].strip()
+            # print(time_, task_)
+            from_, to_ = (_.strip() for _ in time_.split("-"))
 
             from_ = re.findall(r"[0-9]+:[0-9][0-9]", from_)[0]
             from_ = datetime.strptime(from_, "%H:%M")
-            from_ = current_time.replace(
-                hour=from_.hour, minute=from_.minute
-            )
+            from_ = current_time.replace(hour=from_.hour, minute=from_.minute)
 
             to_ = re.findall(r"[0-9]+:[0-9][0-9]", to_)[0]
             to_ = datetime.strptime(to_, "%H:%M")
@@ -318,7 +317,7 @@ class GenerativeAgent:
             delta_time = to_ - from_
 
             if delta_time.total_seconds() < 0:
-                task_to += timedelta(days=1)
+                to_ += timedelta(days=1)
             tasks_time.append({"from": from_, "to": to_, "task": task_})
 
         self.plan = tasks_time
@@ -401,6 +400,7 @@ class GenerativeAgent:
         return result["dialogue"]
 
     def _replan(self, observation, reaction):
+        current_time = self.get_current_time()
         now = self.get_current_time().strftime("%H:%M")
         prompt = self.guidance(PROMPT_REPLAN, silent=self.verbose)
         result = prompt(
@@ -412,22 +412,34 @@ class GenerativeAgent:
             now=now,
             current_time=self.get_current_time().strftime("%A %B %d, %Y, %H:%M"),
         )
-        tasks = result["items"]
-        tasks.insert(0, {"from": now, "to": result["to"], "task": result["task"]})
 
-        current_time = self.get_current_time()
+        plans = result["plans"]
+        plan_splitted = [plan for plan in plans.split("\n")]
+        print(plan_splitted)
         tasks_time = []
 
-        for i, task in enumerate(tasks):
-            task_from = datetime.strptime(task["from"], "%H:%M")
-            task_from = current_time.replace(
-                hour=task_from.hour, minute=task_from.minute
-            )
-            task_to = datetime.strptime(task["to"], "%H:%M")
-            task_to = current_time.replace(hour=task_to.hour, minute=task_to.minute)
-            delta_time = task_to - task_from
+        # tasks = [f"{self.name} plans " + plan for plan in plans.split("\n")]
+        # self.add_memories(tasks)
+
+        for plan in plan_splitted:
+            splitted = plan.split(")")
+            time_ = splitted[0]
+            task_ = splitted[1].strip()
+            # print(time_, task_)
+            from_, to_ = (_.strip() for _ in time_.split("-"))
+
+            from_ = re.findall(r"[0-9]+:[0-9][0-9]", from_)[0]
+            from_ = datetime.strptime(from_, "%H:%M")
+            from_ = current_time.replace(hour=from_.hour, minute=from_.minute)
+
+            to_ = re.findall(r"[0-9]+:[0-9][0-9]", to_)[0]
+            to_ = datetime.strptime(to_, "%H:%M")
+            to_ = current_time.replace(hour=to_.hour, minute=to_.minute)
+
+            delta_time = to_ - from_
+
             if delta_time.total_seconds() < 0:
-                task_to += timedelta(days=1)
-            tasks_time.append({"from": task_from, "to": task_to, "task": task["task"]})
+                to_ += timedelta(days=1)
+            tasks_time.append({"from": from_, "to": to_, "task": task_})
 
         return tasks_time
