@@ -20,13 +20,13 @@ embeddings_model = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 
 now = datetime.now()
 new_time = now.replace(hour=7, minute=25)
-description = "Sam is a Ph.D student, his major is CS;Sam likes computer;Sam lives with his friend, Bob;Sam's father is a doctor;Sam has a dog, named Max"
+description = "bocchi is student of shuka high school;She likes to play guitar;She has youtube channel name of guitar hero"
 sam = GenerativeAgent(
     guidance=guidance,
-    name="Sam",
-    age=23,
+    name="Bocchi",
+    age=17,
     description=description,
-    traits="funny, like football, play CSGO",
+    traits="like to be alone, no speech, like to play guitar",
     embeddings_model=embeddings_model,
     current_time=new_time,
     verbose=True
