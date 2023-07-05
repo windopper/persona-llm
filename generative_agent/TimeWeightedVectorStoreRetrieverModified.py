@@ -58,10 +58,15 @@ class TimeWeightedVectorStoreRetrieverModified(BaseRetriever, BaseModel):
             current_time,
             document.metadata["last_accessed_at"],
         )
+        # Recency 계산
         score = (1.0 - self.decay_rate) ** hours_passed
+
+        # Importance등 계산
         for key in self.other_score_keys:
             if key in document.metadata:
                 score += document.metadata[key]
+
+        # Relevance 계산
         if vector_relevance is not None:
             score += vector_relevance
         return score
@@ -72,22 +77,28 @@ class TimeWeightedVectorStoreRetrieverModified(BaseRetriever, BaseModel):
         vector_relevance: Optional[float],
         current_time: datetime.datetime,
     ) -> float:
-        """Return the combined score for a document."""
+        """Return the combined score list for a document."""
         hours_passed = _get_hours_passed(
             current_time,
             document.metadata["last_accessed_at"],
         )
         if hours_passed < 0:
             hours_passed = 0
+
+        # Recency 계산
         score_time = (1.0 - self.decay_rate) ** hours_passed
         if score_time > 1:
             score_time = 1
         list_scores = []
         list_scores.append(score_time)
+
+        # Importance등 계산
         for key in self.other_score_keys:
             if key in document.metadata:
                 # score += document.metadata[key]
                 list_scores.append(document.metadata[key])
+
+        # Relevance 계산
         if vector_relevance is not None:
             # score += vector_relevance
             list_scores.append(1-vector_relevance)
@@ -96,6 +107,7 @@ class TimeWeightedVectorStoreRetrieverModified(BaseRetriever, BaseModel):
     def get_salient_docs(self, query: str) -> Dict[int, Tuple[Document, float]]:
         """Return documents that are salient to the query."""
         docs_and_scores: List[Tuple[Document, float]]
+
         docs_and_scores = self.vectorstore.similarity_search_with_relevance_scores(
             query, **self.search_kwargs
         )
@@ -111,22 +123,30 @@ class TimeWeightedVectorStoreRetrieverModified(BaseRetriever, BaseModel):
         """Return documents that are relevant to the query."""
         if current_time is None:            
             current_time = datetime.datetime.now()
+
+        # 메모리 스트림에 저장된 상위 k개의 메모리를 로드
+        # (document, salience score)
         docs_and_scores = {
             doc.metadata["buffer_idx"]: (doc, self.default_salience)
             for doc in self.memory_stream[-self.k :]
         }
+
         # If a doc is considered salient, update the salience score
         docs_and_scores.update(self.get_salient_docs(query))
+        # 업데이트 된 메모리에 대한 점수를 모두 가져옴
+        # (Recency, Importance, Relevance)
         rescored_docs = [
             (doc, self._get_combined_score_list(doc, relevance, current_time))
             for doc, relevance in docs_and_scores.values()
         ]
         
+        # 최소-최대 스케일링
         score_array = [b for a, b in rescored_docs]
         score_array_np = np.array(score_array)
         delta_np = score_array_np.max(axis=0) - score_array_np.min(axis=0)
         delta_np = np.where(delta_np == 0, 1, delta_np)
         x_norm = (score_array_np-score_array_np.min(axis=0)) / delta_np
+
         # Weight importance score less
         x_norm[:,0] = x_norm[:,0] * 0.9
         x_norm[:,1] = x_norm[:,1] * 0.9
@@ -136,16 +156,18 @@ class TimeWeightedVectorStoreRetrieverModified(BaseRetriever, BaseModel):
             for (doc, _), score in zip(rescored_docs,x_norm_sum)
         ]                                                     
         
+        # 내림차순으로 정렬
         rescored_docs.sort(key=lambda x: x[1], reverse=True)
         result = []
         # Ensure frequently accessed memories aren't forgotten
         for doc, _ in rescored_docs[: self.k]:
             # TODO: Update vector store doc once `update` method is exposed.
             buffered_doc = self.memory_stream[doc.metadata["buffer_idx"]]
+            # 접근 시각 갱신
             buffered_doc.metadata["last_accessed_at"] = current_time
             result.append(buffered_doc)
         return result
-
+    
     async def aget_relevant_documents(self, query: str) -> List[Document]:
         """Return documents that are relevant to the query."""
         raise NotImplementedError
